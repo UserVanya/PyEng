@@ -4,6 +4,7 @@ import os
 '''
 Translation application
 '''
+
 class TranslatorApp:
     def __init__(self, master):
         self.init_excel_table()
