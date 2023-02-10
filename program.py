@@ -25,6 +25,8 @@ When user types in input field, application translates the word and shows the tr
 
 class TranslatorApp:
     def __init__(self, master):
+        
+        self.colors = { "black": "#000000", "white": "#FFFFFF", "grey": "#808080", "lightgrey": "#D3D3D3", "darkgrey":"#63666A" }
         self.enter_cwd()
         settings_file_path = "pyeng_settings.json"
         if not os.path.exists(settings_file_path):
@@ -39,9 +41,9 @@ class TranslatorApp:
         self.rus_to_eng_df = pd.read_excel(self.dict_wb_name, sheet_name="rus_to_eng")
         self.master = master
         self.master.title("PyEng")
-        self.master.geometry("600x600")
+        self.master.geometry("1200x600")
         self.master.resizable(True, True)
-        self.master.configure(bg="#f0f0f0")
+        self.master.configure(bg=self.colors["white"]) 
         master.grid_columnconfigure(0, weight = 1)
         master.grid_columnconfigure(1, weight = 1)
         master.grid_rowconfigure(0, weight = 5)
@@ -66,43 +68,28 @@ class TranslatorApp:
     def enter_cwd(self):
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
     def create_widgets(self):
-        self.left_frame = tk.Frame(self.master, bg="#f0f0f0")
-        self.left_frame.grid(row=0, column=0, sticky="nsew")
-        self.left_frame.grid_columnconfigure(0, weight = 5)
-        self.left_frame.grid_columnconfigure(1, weight = 1)
-        self.left_frame.grid_rowconfigure(0, weight = 1)
-        self.input_text = tk.Text(self.left_frame, bg="#f0f0f0", wrap="word")
-        self.input_text.grid(row=0, column=0, sticky="nsew")
-        self.input_scrollbar = tk.Scrollbar(self.left_frame, orient="vertical", width=1, command=self.input_text.yview)
-        self.input_text["yscrollcommand"]=self.input_scrollbar.set
-        self.input_scrollbar.grid(row=0, column=1, sticky="nsew")
+        self.input_scrolled = scrolledtext.ScrolledText(self.master, bg=self.colors["darkgrey"], fg=self.colors["white"], wrap="word")
+        self.input_scrolled.grid(row=0, column=0, sticky="nsew")
+        self.input_scrolled.bind("<Enter>", )
 
-        self.right_frame = tk.Frame(self.master, bg="#f0f0f0")
-        self.right_frame.grid(row=0, column=1, sticky="nsew")
-        self.right_frame.grid_columnconfigure(0, weight = 5)
-        self.right_frame.grid_columnconfigure(1, weight = 1)
-        self.right_frame.grid_rowconfigure(0, weight = 1)
-        self.output_text = tk.Text(self.right_frame, bg="#f0f0f0", wrap="word", state="disabled")
-        self.output_text.grid(row=0, column=0, sticky="nsew")
-        self.output_scrollbar = tk.Scrollbar(self.right_frame, orient="vertical", width=1, command=self.output_text.yview)
-        self.output_text["yscrollcommand"]=self.output_scrollbar.set
-        self.output_scrollbar.grid(row=0, column=1, sticky="nsew")
+        self.output_scrolled = scrolledtext.ScrolledText(self.master, bg=self.colors["darkgrey"], fg=self.colors["lightgrey"], wrap="word", state="disabled")
+        self.output_scrolled.grid(row=0, column=1, sticky="nsew") 
 
-        self.detected_lang_frame = tk.Frame(self.master, bg="#f0f0f0")
+        self.detected_lang_frame = tk.Frame(self.master, bg=self.colors["black"])
         self.detected_lang_frame.grid(row=1, column=0, columnspan = 2 ,sticky="nsew")
         self.detected_lang_var = tk.StringVar()
-        self.detected_lang_label = tk.Label(self.detected_lang_frame, textvariable=self.detected_lang_var, bg="#f0f0f0")
+        self.detected_lang_label = tk.Label(self.detected_lang_frame, textvariable=self.detected_lang_var, bg=self.colors["grey"], fg=self.colors["white"])
         self.detected_lang_label.pack(fill="both", expand=True)
         
-        self.translate_button = tk.Button(self.master, text="Translate", command=self.translate)
+        self.translate_button = tk.Button(self.master, text="Translate", command=self.translate, bg=self.colors["grey"], fg=self.colors["white"])
         self.translate_button.grid(row=2, column=0, columnspan = 2, sticky="nsew")
     def translate(self):
-        text = self.input_text.get("1.0", "end-1c")
+        text = self.input_scrolled.get("1.0", "end-1c")
         self.detected_lang_var.set("Detected language: " + self.impl.get_language_code(text))
-        self.output_text.config(state="normal")
-        self.output_text.delete("1.0", "end")
-        self.output_text.insert(tk.END, self.impl.translate(text))
-        self.output_text.config(state="disabled")
+        self.output_scrolled.config(state="normal")
+        self.output_scrolled.delete("1.0", "end")
+        self.output_scrolled.insert(tk.END, self.impl.translate(text))
+        self.output_scrolled.config(state="disabled")
 if __name__ == "__main__":
     root = tk.Tk()
     app = TranslatorApp(root)
