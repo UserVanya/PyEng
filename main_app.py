@@ -27,6 +27,7 @@ class MainApp(tk.Tk):
                                                    folder_id=self.folder_id, 
                                                    langs=self.langs, 
                                                    wb=self.wb)
+        
         self.create_main_window()
     def create_main_window(self):
         self.title("PyEng")
@@ -35,7 +36,7 @@ class MainApp(tk.Tk):
         self.configure(bg="grey")
         self.create_widgets()
     def create_translator_window(self):
-        self.tr_app.create_window( self.df_to, self.df_from)
+        self.tr_app.create_window( self, self.df_to, self.df_from)
     def init_excel_table(self, name, langs):
         self.enter_cwd()
         if not os.path.exists(name):

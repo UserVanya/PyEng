@@ -9,7 +9,7 @@ import os
 import json
 from pyeng_translator_impl import TranslatorImpl
 
-colors = {"darkgrey":"#6F7378", "lightgrey":"#E5E5E5", "white":"#FFFFFF", "black":"#000000", "grey":"#C0C0C0"}
+colors = {"darkgrey":"#393D47", "lightgrey":"#E5E5E5", "white":"#FFFFFF", "black":"#000000", "grey":"#C0C0C0"}
 '''
 Translation application:
 Application requires settings file in json format with the following structure:
@@ -37,10 +37,10 @@ class TranslatorWindow:
     def dismiss(self):
         self.window.grab_release()
         self.window.destroy()
-    def create_window(self, df_to, df_from):
+    def create_window(self, master, df_to, df_from):
         self.df_to = df_to
         self.df_from = df_from
-        self.window = tk.Toplevel()
+        self.window = tk.Toplevel(master)
         self.window.title("PyEng")
         self.window.protocol("WM_DELETE_WINDOW", self.dismiss) # перехватываем нажатие на крестик
         self.window.geometry("1200x600")
@@ -57,18 +57,22 @@ class TranslatorWindow:
     def create_widgets(self, window):
         self.input_scrolled = scrolledtext.ScrolledText(window, bg=colors["darkgrey"], fg=colors["white"], wrap="word")
         self.input_scrolled.grid(row=0, column=0, sticky="nsew")
+        self.input_scrolled.configure(font=("Claibri", 14))
 
         self.output_scrolled = scrolledtext.ScrolledText(window, bg=colors["darkgrey"], fg=colors["lightgrey"], wrap="word", state="disabled")
         self.output_scrolled.grid(row=0, column=1, sticky="nsew") 
+        self.output_scrolled.configure(font=("Claibri", 14, "italic"))
 
         # self.detected_lang_frame = tk.Frame(self.master, bg=self.colors["black"])
         # self.detected_lang_frame.grid(row=1, column=0, columnspan = 2 ,sticky="nsew")
         self.detected_lang_var = tk.StringVar()
         self.detected_lang_label = tk.Label(window, textvariable=self.detected_lang_var, bg=colors["grey"], fg=colors["white"])
         self.detected_lang_label.grid(row=1, column=0, columnspan=2, sticky="nsew")
+        self.detected_lang_label.configure(font=("Claibri", 16))
         #self.detected_lang_label.pack(fill="both", expand=True)
         
         self.translate_button = tk.Button(window, text="Translate", command=self.translate, bg=colors["grey"], fg=colors["white"])
+        self.translate_button.configure(font=("Claibri", 16))
         self.translate_button.grid(row=2, column=0, columnspan = 2, sticky="nsew")
     def translate(self):
         text = self.input_scrolled.get("1.0", "end-1c")
