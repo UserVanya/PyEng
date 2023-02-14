@@ -62,21 +62,26 @@ class TranslatorImpl:
             return response_dict['languageCode'], True, ""
         else:
             raise Exception(msg)
-    def get_translation(self, word, target_lang_code = 'en') -> str:
+    def get_translation(self, word, hint_lang_codes = ['en', 'ru'], target_lang_code = 'en') -> dict:
         '''
-        Returns the translation of the given word into the language with target_lang_code (default: 'en')
+        Returns the translation of the given word (with the detected language code) 
+        into the language with target_lang_code (default: 'en')
         Return example:
         get_translation ("Hello", 'en')
-        'привет'
+        {
+            "text": "Привет",
+            "detectedLanguageCode": "en"
+        }
         '''
         body = {
             "targetLanguageCode": target_lang_code,
             "texts": word,
-            "folderId": self.folder_id
+            "folderId": self.folder_id,
+            "languageCodeHints": hint_lang_codes,
         }
         response_dict, success, msg = self.__get_response_dict("translate", body)
         if success:
-            return response_dict['translations'][0]['text']
+            return response_dict['translations'][0]
         else:
             raise Exception(msg)
     def __get_response_dict(self, request_string: str, body) -> tuple:
