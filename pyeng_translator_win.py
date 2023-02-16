@@ -21,7 +21,6 @@ class TranslatorWindow:
         self.window.grid_rowconfigure(1, weight=10)
         self.window.grid_rowconfigure(2, weight=1)
         self.window.grid_rowconfigure(3, weight=1)
-
     def create_window(self, master):
         self.window = tk.Toplevel(master)
         self.window.title("PyEng")
@@ -58,11 +57,18 @@ class TranslatorWindow:
         self.service.set("Google")
         self.service.grid(row=0, column=0, sticky='nsew', columnspan = 2)
         self.service.configure(font=("Calibri", 16))
-    def create_translate_button(self):
+    def save(self):
+        params = self.translate()
+        self.core.save_translation(params[0], params[1], params[2], params[3])
+    def create_buttons(self):
         self.translate_button = tk.Button(self.window, text="Translate", command=self.translate, bg=colors["grey"], fg=colors["white"])
         self.translate_button.configure(font=("Calibri", 16))
-        self.translate_button.grid(row=3, column=0, columnspan = 2, sticky="nsew")
-    
+        self.translate_button.grid(row=3, column=0, sticky="nsew")
+
+        self.save_button = tk.Button(self.window, text="Add word", command=self.save, bg=colors["lightgrey"], fg=colors["black"])
+        self.save_button.configure(font=("Calibri", 16))
+        self.save_button.grid(row=3, column=1, sticky="nsew")
+
     def create_widgets(self):
         self.create_service_selection()
 
@@ -70,7 +76,8 @@ class TranslatorWindow:
 
         self.create_lang_widgets()
 
-        self.create_translate_button()
+        self.create_buttons()
+
     def translate(self):
         text = self.input_scrolled.get("1.0", "end-1c")
         lang_from_code = 'en'
@@ -78,11 +85,14 @@ class TranslatorWindow:
             lang_from = self.core.get_detected_lang(text)
             lang_from_code = self.core.get_lang_code(lang_from)
             self.input_lang.set(f"<detected: {lang_from}>")
-        translation = self.core.get_translation(lang_from_code, self.core.get_lang_code(self.output_lang.get()), text)
+        lang_to = self.output_lang.get()
+        lang_to_code = self.core.get_lang_code(lang_to)
+        translation = self.core.get_translation(lang_from_code, lang_to_code, text)
         self.output_scrolled.config(state="normal")
         self.output_scrolled.delete("1.0", "end")
         self.output_scrolled.insert(tk.END, translation)
         self.output_scrolled.config(state="disabled")
+        return lang_from_code, lang_to_code, text, translation
 if __name__ == "__main__":
     root = tk.Tk()
     core = PyengCore()

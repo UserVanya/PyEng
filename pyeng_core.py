@@ -93,7 +93,8 @@ class PyengCore:
             self.settings["dict_file_name"] = tk.filedialog.askopenfilename(
                 title="Select dictionary excel file", filetypes=[("EXCEL", "*.xlsx")])
         self.wb = openpyxl.load_workbook(self.settings["dict_file_name"])
-        self.__init_sheets("History")
+        if "History" not in self.wb.sheetnames:
+            self.__init_sheets("History")
         for sheetname in self.wb.sheetnames:
             self.dfs[sheetname] = pd.read_excel(self.settings['dict_file_name'], sheet_name=sheetname)
     def __add_history(self, word, translation):
