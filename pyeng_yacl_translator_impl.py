@@ -3,7 +3,7 @@ import json
 import tkinter as tk
 
 
-class TranslatorImpl:
+class YacloudTranslator:
     '''
     Class with methods to obtain information from yandex cloud service.
     Main methods are:
@@ -18,30 +18,28 @@ class TranslatorImpl:
             "Content-Type": "application/json",
             "Authorization": "Api-Key {0}".format(self.api_key)
         }
-    def get_available_langs(self):
+    def get_available_langs(self)->list:
         '''
         Returns list of available languages.
         Return example:
-        {
-            "languages": [
-                    {
-                    "code": "az",
-                    "name": "azərbaycan"
-                    },
-                    {
-                    "code": "en",
-                    "name": "English"
-                    },
-                    ...
-            ]
-        }
+        [
+                {
+                "code": "az",
+                "name": "azərbaycan"
+                },
+                {
+                "code": "en",
+                "name": "English"
+                },
+                ...
+        ]
         '''
         body = {
             "folderId": self.folder_id
         }
         response_dict, success, msg = self.__get_response_dict("languages", body)
         if success:
-            return response_dict['languageCode'], True, ""
+            return response_dict['languages']
         else:
             raise Exception(msg)
     def get_language_code(self, word: str, hint_lang_codes = []) -> str:
@@ -59,7 +57,7 @@ class TranslatorImpl:
         }
         response_dict, success, msg = self.__get_response_dict("detect", body)
         if success:
-            return response_dict['languageCode'], True, ""
+            return response_dict['languageCode']
         else:
             raise Exception(msg)
     def get_translation(self, word, hint_lang_codes = ['en', 'ru'], target_lang_code = 'en') -> dict:
@@ -103,7 +101,7 @@ class TranslatorImpl:
         return response_dict, True, "Success"
 
 def main():
-    impl = TranslatorImpl("AQVNxjK5Yr282hq2cLekOt7lWu7YpMUw6KM5xiLS", "b1gf5shu9k696m00c35h")
+    impl = YacloudTranslator("AQVNxjK5Yr282hq2cLekOt7lWu7YpMUw6KM5xiLS", "b1gf5shu9k696m00c35h")
     print(impl.get_translation("Hello", 'ru'))
     print(impl.get_language_code("Hello", ['ru', 'en']))
     print(impl.get_available_langs())

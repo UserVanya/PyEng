@@ -4,17 +4,32 @@ from tkinter.messagebox import*
 import openpyxl
 import json
 import pandas as pd
-from pyeng_translator_impl import TranslatorImpl
+from pyeng_yacl_translator_impl import YacloudTranslator
 class PyengCore:
     '''
     A core class for PyEng application, stores data, translates words, saves requests history
     '''
-    def __init__(self, api_key, folder_id) -> None:
+    def __init__(self) -> None:
+        self.default_headers = ['Word', 'Translation', 'Hint']
         self.__init_settings_file()
         self.__init_dictionaries()
-        self.default_headers = ['Word', 'Translation', 'Hint']
-        self.tr_impl = TranslatorImpl(self.settings['api_key'], self.settings['folder_id'])
-    
+        self.tr_impl = YacloudTranslator(self.settings['api_key'], self.settings['folder_id'])
+        langs_list = self.tr_impl.get_available_langs()
+        self.lang_to_code = {}
+        self.code_to_lang = {}
+        for el in langs_list:
+            if 'name' in el.keys():
+                self.lang_to_code[el['name']] = el['code']
+                self.code_to_lang[el['code']] = el['name']
+    def get_lang_code(self, lang):
+        return self.lang_to_code[lang]
+    def get_available_langs(self):
+        return self.lang_to_code.keys()
+    def get_detected_lang (self, word):
+        '''
+        Returns the language name of the word
+        '''
+        return self.code_to_lang[self.tr_impl.get_language_code(word)] 
     def get_translations (self, lang_from: str, lang_to: str, word: str) -> list:
         '''
         Returns saved translations for requested !!!word!!! or requests yandex cloud for translation if there are no available translations for this word
@@ -55,7 +70,7 @@ class PyengCore:
             assert(type(name) == str)
             self.wb.create_sheet(name)
             self.wb[name].append(self.default_headers)
-        
+            self.wb.save(self.settings['dict_file_name'])
             self.dfs[name] = pd.DataFrame(columns=self.default_headers)
     def __init_settings_file(self):
         '''
@@ -72,13 +87,13 @@ class PyengCore:
         '''
         Initializing dictionaries as dataframes and openpyxl workbook (settings dict should be already set) 
         '''
+        self.dfs = {}
         if not os.path.exists(self.settings["dict_file_name"]):
             showerror("PyEng", self.__no_dict_file_error_msg())
             self.settings["dict_file_name"] = tk.filedialog.askopenfilename(
                 title="Select dictionary excel file", filetypes=[("EXCEL", "*.xlsx")])
-        self.wb = openpyxl.load_workbook(self.settings["dict_file_name"], write_only=False)
+        self.wb = openpyxl.load_workbook(self.settings["dict_file_name"])
         self.__init_sheets("History")
-        self.dfs = {}
         for sheetname in self.wb.sheetnames:
             self.dfs[sheetname] = pd.read_excel(self.settings['dict_file_name'], sheet_name=sheetname)
     def __add_history(self, word, translation):
