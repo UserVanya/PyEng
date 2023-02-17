@@ -19,12 +19,13 @@ class PyengCore:
         self.code_to_lang = {}
         for el in langs_list:
             if 'name' in el.keys():
-                self.lang_to_code[el['name']] = el['code']
-                self.code_to_lang[el['code']] = el['name']
+                self.lang_to_code[el['name'].lower()] = el['code'].lower()
+                self.code_to_lang[el['code'].lower()] = el['name'].lower()
+                print(el['code'], el['name'])
     def get_lang_code(self, lang):
         return self.lang_to_code[lang]
     def get_available_langs(self):
-        return self.lang_to_code.keys()
+        return list(self.lang_to_code.keys())
     def get_detected_lang (self, word):
         '''
         Returns the language name of the word
