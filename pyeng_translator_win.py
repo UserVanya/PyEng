@@ -13,9 +13,10 @@ colors = {"darkgrey": "#393D47", "lightgrey": "#E5E5E5",
 class TranslatorWindow:
     def __init__(self, core: PyengCore):
         self.core = core
-        self.last_lang_to_translate = "русский"
-        self.last_lang_from_translate = "english"
+        self.last_lang_to_code = "ru"
+        self.last_lang_from_code = "en"
         self.last_text_to_translate = ""
+        self.last_hint = ''
     def configure_grid(self):
         self.window.grid_columnconfigure(0, weight=1)
         self.window.grid_columnconfigure(1, weight=1)
@@ -25,17 +26,23 @@ class TranslatorWindow:
         self.window.grid_rowconfigure(3, weight=1)
         self.window.grid_rowconfigure(4, weight=1)
 
+    def dismiss(self):
+        self.window.grab_release() 
+        self.window.destroy()
     def create_window(self, master):
+        self.master = master
         self.window = tk.Toplevel(master)
         self.window.title("PyEng")
         self.window.geometry("1200x600")
         self.window.resizable(False, False)
         self.window.configure(bg=colors["darkgrey"])
         self.window.bind('<Return>', lambda event: self.translate())
-        self.window.bind("<Escape>", lambda event: self.window.destroy())
+        self.window.protocol("WM_DELETE_WINDOW", self.close_window)
+        self.window.bind("<Escape>", lambda event: self.close_window())
         self.configure_grid()
         self.create_widgets()
-
+        self.window.grab_set()
+        
     def create_text_widgets(self):
         self.input_scrolled = scrolledtext.ScrolledText(self.window, bg=colors["darkgrey"], fg=colors["white"], wrap="word", state='normal')
         self.input_scrolled.grid(row=1, column=0, sticky="nsew")
@@ -57,6 +64,7 @@ class TranslatorWindow:
             "1.0", "end") if self.output_scrolled.get("1.0", "end-1c") == self.text2 else None)
         self.output_scrolled.bind("<FocusOut>", lambda event: self.output_scrolled.insert(
             "1.0", self.text2) if self.output_scrolled.get("1.0", "end-1c") == "" else None)
+        #self.output_scrolled.grab_set()
 
         self.hint_entry = tk.Entry(
             self.window, bg=colors["darkgrey"], fg=colors["white"])
@@ -104,13 +112,16 @@ class TranslatorWindow:
         self.service.configure(font=("Calibri", 16))
 
     def save(self):
-        pass    
+        text_out = self.output_scrolled.get("1.0", "end-1c")
+        if tk.messagebox.askokcancel("PyEng: Add word", f"Pair {self.last_text_to_translate}({self.last_lang_from_code}) - {text_out}({self.last_lang_to_code}) with hint: '{self.last_hint}' will be added to dictionary. Are you sure?"):
+            self.core.save_translation(self.last_lang_from_code, self.last_lang_to_code, self.last_text_to_translate, text_out)
+            self.window.focus_set()
     def create_buttons(self):
         self.translate_button = tk.Button(self.window, text="Translate", command=self.translate, bg=colors["grey"], fg=colors["white"])
         self.translate_button.configure(font=("Calibri", 16))
         self.translate_button.grid(row=4, column=0, sticky="nsew")
 
-        self.save_button = tk.Button(self.window, text="Add word", command=self.save, bg=colors["lightgrey"], fg=colors["black"])
+        self.save_button = tk.Button(self.window, text="Add word", command=self.save, bg=colors["lightgrey"], fg=colors["black"], state="disabled")
         self.save_button.configure(font=("Calibri", 16))
         self.save_button.grid(row=4, column=1, sticky="nsew")
 
@@ -125,6 +136,12 @@ class TranslatorWindow:
 
     def translate(self):
         text = self.input_scrolled.get("1.0", "end-1c")
+        if text[-1] == '\n':
+            text = text[:-1]
+            self.input_scrolled.delete("end-1c", "end")
+        if text is None or text == "":
+            tk.messagebox.showerror("Error", "Please, enter text to translate")
+            return
         lang_from_code = 'en'
         detected_lang = self.core.get_detected_lang(text)
         lang_from = self.input_lang.get()
@@ -147,13 +164,17 @@ class TranslatorWindow:
         self.output_scrolled.config(state="normal")
         self.output_scrolled.delete("1.0", "end")
         self.output_scrolled.insert(tk.END, translation)
-        self.last_lang_to_translate = lang_to
-        self.last_lang_from_translate = lang_from
+        self.last_lang_to_code = lang_to_code
+        self.last_lang_from_code = lang_from_code
         self.last_text_to_translate = text
+        self.last_hint = self.hint_entry.get()
+        self.save_button.configure(state="normal")
     def close_window(self):
         if self.window:
+            self.window.grab_release()
             self.window.destroy()
-
+            self.master.deiconify()
+            self.master.focus_set()
 
 if __name__ == "__main__":
     root = tk.Tk()

@@ -20,8 +20,13 @@ class MainApp(tk.Tk):
         self.create_widgets()
     def create_translator_window(self):
         self.tr_app = TranslatorWindow(self.core)
+        self.bind_all("<Escape>", lambda event: self.tr_app.close_window())
+    
         self.tr_app.create_window(self)
-        self.bind("<Escape>", lambda event: self.tr_app.close_window())
+    
+        #hide main window
+        self.iconify()
+        
     def enter_cwd(self):
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
     def create_widgets(self):
