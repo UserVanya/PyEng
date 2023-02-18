@@ -147,6 +147,9 @@ class TranslatorWindow:
         if text is None or text == "":
             tk.messagebox.showerror("Error", "Please, enter text to translate")
             return
+        text = text.strip()
+        self.input_scrolled.delete("1.0", "end")
+        self.input_scrolled.insert("1.0", text)
         lang_from_code = 'en'
         detected_lang = self.core.get_detected_lang(text)
         lang_from = self.input_lang.get()
@@ -185,7 +188,7 @@ class TranslatorWindow:
             self.window.grab_release()
             self.window.destroy()
             self.is_window_opened = False
-            self.master.deiconify()
+            #self.master.deiconify()
             self.master.focus_set()
 
 if __name__ == "__main__":
