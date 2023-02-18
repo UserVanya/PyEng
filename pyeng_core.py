@@ -118,7 +118,7 @@ class PyengCore:
             self.dfs[sheetname] = pd.read_excel(self.settings['dict_file_name'], sheet_name=sheetname)
     def __add_history(self, word, translation):
         self.wb["History"].append([word, translation])
-    
+        self.wb.save(self.settings['dict_file_name'])
     def __enter_cwd(self):
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
     def __no_dict_file_error_msg(self):
