@@ -4,7 +4,7 @@ from tkinter.filedialog import askopenfilename
 import tkinter as tk
 from tkinter import ttk
 from tkinter import scrolledtext
-from pyeng_core import PyengCore
+from pyeng_core import *
 from autocomplete_combobox import AutocompleteCombobox
 colors = {"darkgrey": "#393D47", "lightgrey": "#E5E5E5",
           "white": "#FFFFFF", "black": "#000000", "grey": "#C0C0C0"}
@@ -57,6 +57,7 @@ class TranslatorWindow:
             "1.0", "end") if self.input_scrolled.get("1.0", "end-1c") == self.text1 else None)
         self.input_scrolled.bind("<FocusOut>", lambda event: self.input_scrolled.insert(
             "1.0", self.text1) if self.input_scrolled.get("1.0", "end-1c") == "" else None)
+        self.input_scrolled.bind("<Control-KeyPress>", ru_keys_handler)
 
         self.output_scrolled = scrolledtext.ScrolledText(
             self.window, bg=colors["darkgrey"], fg=colors["lightgrey"], wrap="word", state="normal")
@@ -68,6 +69,7 @@ class TranslatorWindow:
             "1.0", "end") if self.output_scrolled.get("1.0", "end-1c") == self.text2 else None)
         self.output_scrolled.bind("<FocusOut>", lambda event: self.output_scrolled.insert(
             "1.0", self.text2) if self.output_scrolled.get("1.0", "end-1c") == "" else None)
+        self.output_scrolled.bind("<Control-KeyPress>", ru_keys_handler)
         #self.output_scrolled.grab_set()
 
         self.hint_entry = tk.Entry(
@@ -94,6 +96,7 @@ class TranslatorWindow:
         self.input_lang.set_completion_list(self.langs)
         self.input_lang.bind("<FocusIn>", lambda event: self.input_lang.delete(0, tk.END) if self.input_lang.get() == "<autodetect>" else None)
         self.input_lang.bind("<FocusOut>", self.widget_input_lang_focus_out)
+        self.input_lang.bind("<Control-KeyPress>", ru_keys_handler)
         self.input_lang.insert(0, "<autodetect>")
         self.input_lang.configure(font=("Calibri", 16, "italic"))
         
@@ -101,7 +104,8 @@ class TranslatorWindow:
         self.output_lang.set_completion_list(self.langs)
         self.output_lang.grid(row=2, column=1, sticky='nsew')
         self.output_lang.bind("<FocusIn>", lambda event: self.output_lang.delete(0, tk.END))
-        self.output_lang.bind("<FocusOut>", lambda event: self.output_lang.insert(0, "русский") if self.output_lang.get() not in self.langs else None)
+        self.output_lang.bind("<FocusOut>", lambda event: self.output_lang.set("русский") if self.output_lang.get() not in self.langs else None)
+        self.output_lang.bind("<Control-KeyPress>", ru_keys_handler)
         self.output_lang.set("русский")
         self.output_lang.configure(font=("Calibri", 16, "italic"))
 
