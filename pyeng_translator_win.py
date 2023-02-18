@@ -17,6 +17,7 @@ class TranslatorWindow:
         self.last_lang_from_code = "en"
         self.last_text_to_translate = ""
         self.last_hint = ''
+        self.is_window_opened = False
     def configure_grid(self):
         self.window.grid_columnconfigure(0, weight=1)
         self.window.grid_columnconfigure(1, weight=1)
@@ -26,24 +27,27 @@ class TranslatorWindow:
         self.window.grid_rowconfigure(3, weight=1)
         self.window.grid_rowconfigure(4, weight=1)
 
-    def dismiss(self):
-        self.window.grab_release() 
-        self.window.destroy()
     def create_window(self, master):
         self.master = master
         self.window = tk.Toplevel(master)
         self.window.title("PyEng")
-        self.window.geometry("1200x600")
+        width = 1200
+        height = 600
+        center_x = int(self.master.winfo_screenwidth() / 2 - width//2)
+        center_y = int(self.master.winfo_screenheight() / 2 - height//2)
+        self.window.geometry(f"{width}x{height}+{center_x}+{center_y}")
         self.window.resizable(False, False)
         self.window.configure(bg=colors["darkgrey"])
-        self.window.bind('<Return>', lambda event: self.translate())
+        self.window.bind('<Return>', lambda event: self.do_translate())
         self.window.protocol("WM_DELETE_WINDOW", self.close_window)
         self.window.bind("<Escape>", lambda event: self.close_window())
         self.configure_grid()
-        self.create_widgets()
+        self.__create_widgets()
         self.window.grab_set()
+        self.is_window_opened = True
+        self.window.deiconify()
         
-    def create_text_widgets(self):
+    def __create_text_widgets(self):
         self.input_scrolled = scrolledtext.ScrolledText(self.window, bg=colors["darkgrey"], fg=colors["white"], wrap="word", state='normal')
         self.input_scrolled.grid(row=1, column=0, sticky="nsew")
         self.input_scrolled.configure(font=("Calibri", 14))
@@ -82,11 +86,7 @@ class TranslatorWindow:
             self.input_lang.delete(0, tk.END)
             self.input_lang.insert(0, "<autodetect>")
         self.prev_input_lang = self.input_lang.get()
-    def widget_output_lang_focus_out(self, event):
-        if self.output_lang.get() == "" or self.output_lang.get() not in self.langs:
-            self.output_lang.delete(0, tk.END)
-            self.output_lang.insert(0, "русский")
-    def create_lang_widgets(self):
+    def __create_lang_widgets(self):
         self.langs = self.core.get_available_langs()
 
         self.input_lang = AutocompleteCombobox(self.window)
@@ -105,36 +105,37 @@ class TranslatorWindow:
         self.output_lang.set("русский")
         self.output_lang.configure(font=("Calibri", 16, "italic"))
 
-    def create_service_selection(self):
+    def __create_service_selection(self):
         self.service = ttk.Combobox(self.window, values=[ "Google", "Yandex"], state='readonly', justify='center', background=colors["grey"], foreground=colors["white"])
         self.service.set("Yandex")
         self.service.grid(row=0, column=0, sticky='nsew', columnspan=2)
         self.service.configure(font=("Calibri", 16))
-
-    def save(self):
+    def is_opened(self):
+        return self.is_window_opened
+    def __do_save(self):
         text_out = self.output_scrolled.get("1.0", "end-1c")
         if tk.messagebox.askokcancel("PyEng: Add word", f"Pair {self.last_text_to_translate}({self.last_lang_from_code}) - {text_out}({self.last_lang_to_code}) with hint: '{self.last_hint}' will be added to dictionary. Are you sure?"):
             self.core.save_translation(self.last_lang_from_code, self.last_lang_to_code, self.last_text_to_translate, text_out)
             self.window.focus_set()
-    def create_buttons(self):
-        self.translate_button = tk.Button(self.window, text="Translate", command=self.translate, bg=colors["grey"], fg=colors["white"])
+    def __create_buttons(self):
+        self.translate_button = tk.Button(self.window, text="Translate", command=self.do_translate, bg=colors["grey"], fg=colors["white"])
         self.translate_button.configure(font=("Calibri", 16))
         self.translate_button.grid(row=4, column=0, sticky="nsew")
 
-        self.save_button = tk.Button(self.window, text="Add word", command=self.save, bg=colors["lightgrey"], fg=colors["black"], state="disabled")
+        self.save_button = tk.Button(self.window, text="Add word", command=self.__do_save, bg=colors["lightgrey"], fg=colors["black"], state="disabled")
         self.save_button.configure(font=("Calibri", 16))
         self.save_button.grid(row=4, column=1, sticky="nsew")
+    
+    def __create_widgets(self):
+        self.__create_service_selection()
 
-    def create_widgets(self):
-        self.create_service_selection()
+        self.__create_text_widgets()
 
-        self.create_text_widgets()
+        self.__create_lang_widgets()
 
-        self.create_lang_widgets()
+        self.__create_buttons()
 
-        self.create_buttons()
-
-    def translate(self):
+    def do_translate(self):
         text = self.input_scrolled.get("1.0", "end-1c")
         if text[-1] == '\n':
             text = text[:-1]
@@ -169,10 +170,17 @@ class TranslatorWindow:
         self.last_text_to_translate = text
         self.last_hint = self.hint_entry.get()
         self.save_button.configure(state="normal")
+    def add_text_to_translate(self, word):
+        self.input_scrolled.delete("1.0", "end")
+        self.input_scrolled.insert(tk.END, word)
+    def set_focus(self):
+        self.window.focus_set()
+        self.window.focus_force()
     def close_window(self):
         if self.window:
             self.window.grab_release()
             self.window.destroy()
+            self.is_window_opened = False
             self.master.deiconify()
             self.master.focus_set()
 
