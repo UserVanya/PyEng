@@ -5,6 +5,7 @@ import openpyxl
 import json
 import pandas as pd
 import ctypes
+import sys
 from pyeng_yacl_translator_impl import YacloudTranslator
 def is_ru_lang_keyboard():
     '''
@@ -131,17 +132,17 @@ class PyengCore:
         if not os.path.exists(settings_file_path):
             showerror("PyEng", self.__no_settings_file_error_msg())
             raise Exception(self.__no_settings_file_error_msg())
-        self.settings = json.loads(open(settings_file_path, "r").read())
+        self.settings = json.loads(open(settings_file_path, "r", encoding='utf-8').read())
     def __init_dictionaries(self):
         '''
         Initializing dictionaries as dataframes and openpyxl workbook (settings dict should be already set) 
         '''
         self.dfs = {}
+        self.settings["dict_file_name"] = self.settings["dict_file_name"]#.encode('utf-8').decode(sys.getfilesystemencoding())
         if not os.path.exists(self.settings["dict_file_name"]):
             showerror("PyEng", self.__no_dict_file_error_msg())
             self.settings["dict_file_name"] = tk.filedialog.askopenfilename(
                 title="Select dictionary excel file", filetypes=[("EXCEL", "*.xlsx")]).encode('utf-8').decode('utf-8')
-        print(self.settings["dict_file_name"])
         self.wb = openpyxl.load_workbook(self.settings["dict_file_name"])
         if "History" not in self.wb.sheetnames:
             self.__init_sheets("History")
