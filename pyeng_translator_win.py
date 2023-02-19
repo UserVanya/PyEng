@@ -22,7 +22,7 @@ class TranslatorWindow:
         self._last_lang_to_code = "ru"
         self._last_lang_from_code = "en"
         self._last_text_to_translate = ""
-        self._last_hint = ''
+        #self._last_hint = ''
     def __configure_grid(self):
         '''
         Configures grid for window
@@ -48,45 +48,43 @@ class TranslatorWindow:
         self._window.configure(bg=colors["darkgrey"])
         self._window.bind('<Return>', lambda event: self.do_translate())
         self._window.protocol("WM_DELETE_WINDOW", self.close_window)
-        self._window.bind("<Escape>", lambda event: self.close_window())
+        #self._window.bind("<Escape>", lambda event: self.close_window())
         self.__configure_grid()
         self.__create_widgets()
         self._window.grab_set()
         self._is_window_opened = True
         self._window.deiconify()
-        
-    def __create_text_widgets(self):
-        self._input_scrolled = scrolledtext.ScrolledText(self._window, bg=colors["darkgrey"], fg=colors["white"], wrap="word", state='normal')
-        self._input_scrolled.grid(row=1, column=0, sticky="nsew")
-        self._input_scrolled.configure(font=("Calibri", 14))
+    def __add_binds_to_text_widgets(self):
         self.text1 = "Enter text you want to translate here..."
         self._input_scrolled.insert("1.0", self.text1)
         self._input_scrolled.bind("<FocusIn>", lambda event: self._input_scrolled.delete("1.0", "end") if self._input_scrolled.get("1.0", "end-1c") == self.text1 else None)
         self._input_scrolled.bind("<FocusOut>", lambda event: self._input_scrolled.insert("1.0", self.text1) if self._input_scrolled.get("1.0", "end-1c") == "" else None)
         self._input_scrolled.bind("<Control-KeyPress>", ru_keys_handler)
 
-        self._output_scrolled = scrolledtext.ScrolledText(self._window, bg=colors["darkgrey"], fg=colors["lightgrey"], wrap="word", state="normal")
-        self._output_scrolled.grid(row=1, column=1, sticky="nsew")
-        self._output_scrolled.configure(font=("Calibri", 14, "italic"))
         self.text2 = "Translation will appear here...\n(You can also change this field in order to add the appropriate translation to the dictionary)"
         self._output_scrolled.insert("1.0", self.text2)
         self._output_scrolled.bind("<Button-1>", lambda event: self._output_scrolled.delete("1.0", "end") if self._output_scrolled.get("1.0", "end-1c") == self.text2 else None)
         self._output_scrolled.bind("<FocusOut>", lambda event: self._output_scrolled.insert("1.0", self.text2) if self._output_scrolled.get("1.0", "end-1c") == "" else None)
         self._output_scrolled.bind("<Control-KeyPress>", ru_keys_handler)
-        #self._output_scrolled.grab_set()
+        
+        self._hint_entry.insert(0, "Enter hint:")
+        self._hint_entry.bind("<Button-1>", lambda event: self._hint_entry.delete(0, tk.END) if self._hint_entry.get() == "Enter hint:" else None)
+        self._hint_entry.bind("<FocusOut>", lambda event: self._hint_entry.insert(0, "Enter hint:") if self._hint_entry.get() == "" else None)
+        self._hint_entry.bind("<Control-KeyPress>", ru_keys_handler)
+    def __create_text_widgets(self):
+        self._input_scrolled = scrolledtext.ScrolledText(self._window, bg=colors["darkgrey"], fg=colors["white"], wrap="word", state='normal')
+        self._input_scrolled.grid(row=1, column=0, sticky="nsew")
+        self._input_scrolled.configure(font=("Calibri", 14))
 
-        self.hint_entry = tk.Entry(self._window, bg=colors["darkgrey"], fg=colors["white"])
-        self.hint_entry.grid(row=3, column=0, sticky="nsew", columnspan=2, ipady=1)
-        self.hint_entry.configure(font=("Calibri", 14))
-        self.hint_entry.insert(0, "Enter hint:")
-        self.hint_entry.bind("<Button-1>", lambda event: self.hint_entry.delete(0, tk.END) if self.hint_entry.get() == "Enter hint:" else None)
-        self.hint_entry.bind("<FocusOut>", lambda event: self.hint_entry.insert(0, "Enter hint:") if self.hint_entry.get() == "" else None)
+        self._output_scrolled = scrolledtext.ScrolledText(self._window, bg=colors["darkgrey"], fg=colors["lightgrey"], wrap="word", state="normal")
+        self._output_scrolled.grid(row=1, column=1, sticky="nsew")
+        self._output_scrolled.configure(font=("Calibri", 14, "italic"))
 
-    def widget_input_lang_focus_out(self, event):
-       if self._input_lang.get() == "" or self._input_lang.get() not in self.langs:
-           self._input_lang.delete(0, tk.END)
-           self._input_lang.insert(0, "<autodetect>")
-           self.prev_input_lang = self._input_lang.get()
+        self._hint_entry = tk.Entry(self._window, bg=colors["darkgrey"], fg=colors["white"])
+        self._hint_entry.grid(row=3, column=0, sticky="nsew", columnspan=2, ipady=1)
+        self._hint_entry.configure(font=("Calibri", 14))
+        
+        self.__add_binds_to_text_widgets()
     def __create_lang_widgets(self):
         self.langs = self._core.get_available_langs()
 
@@ -117,7 +115,7 @@ class TranslatorWindow:
         return self._is_window_opened
     def __do_save(self):
         text_out = self._output_scrolled.get("1.0", "end-1c")
-        if tk.messagebox.askokcancel("PyEng: Add word", f"Pair {self._last_text_to_translate}({self._last_lang_from_code}) - {text_out}({self._last_lang_to_code}) with hint: '{self._last_hint}' will be added to dictionary. Are you sure?"):
+        if tk.messagebox.askokcancel("PyEng: Add word", f"Pair {self._last_text_to_translate}({self._last_lang_from_code}) - {text_out}({self._last_lang_to_code}) with hint: '{self._hint_entry.get()}' will be added to dictionary. Are you sure?"):
             self._core.save_translation(self._last_lang_from_code, self._last_lang_to_code, self._last_text_to_translate, text_out)
             self._window.focus_set()
     def __create_buttons(self):
@@ -137,8 +135,7 @@ class TranslatorWindow:
         self.__create_lang_widgets()
 
         self.__create_buttons()
-
-    def do_translate(self):
+    def _check_and_get_corrected_input(self):
         text = self._input_scrolled.get("1.0", "end-1c")
         if text[-1] == '\n':
             text = text[:-1]
@@ -149,6 +146,8 @@ class TranslatorWindow:
         text = text.strip()
         self._input_scrolled.delete("1.0", "end")
         self._input_scrolled.insert("1.0", text)
+        return text
+    def _check_and_get_corrected_langs(self, text):
         lang_from_code = 'en'
         detected_lang = self._core.get_detected_lang(text)
         lang_from = self._input_lang.get()
@@ -167,6 +166,10 @@ class TranslatorWindow:
                 lang_to = 'русский'
                 lang_to_code = 'ru'
                 self._output_lang.set(lang_to)
+        return lang_from_code, lang_to_code
+    def do_translate(self):
+        text = self._check_and_get_corrected_input()
+        lang_from_code, lang_to_code = self._check_and_get_corrected_langs(text)
         translation = self._core.get_translation(lang_from_code, lang_to_code, text)
         self._output_scrolled.config(state="normal")
         self._output_scrolled.delete("1.0", "end")
@@ -174,7 +177,7 @@ class TranslatorWindow:
         self._last_lang_to_code = lang_to_code
         self._last_lang_from_code = lang_from_code
         self._last_text_to_translate = text
-        self._last_hint = self.hint_entry.get()
+        #self._last_hint = self._hint_entry.get()
         self.save_button.configure(state="normal")
     def add_text_to_translate(self, word):
         self._input_scrolled.delete("1.0", "end")
@@ -182,13 +185,14 @@ class TranslatorWindow:
     def set_focus(self):
         self._window.focus_set()
         self._window.focus_force()
-    def close_window(self):
+    def close_window(self, do_master_deiconify=True):
         if self._window:
             self._window.grab_release()
             self._window.destroy()
             self._is_window_opened = False
-            #self._master.deiconify()
-            self._master.focus_set()
+            if (do_master_deiconify):
+                self._master.deiconify()
+                self._master.focus_set()
 
 if __name__ == "__main__":
     root = tk.Tk()
