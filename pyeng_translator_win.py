@@ -32,11 +32,11 @@ class TranslatorWindow:
         '''
         self._window.grid_columnconfigure(0, weight=1)
         self._window.grid_columnconfigure(1, weight=1)
-        self._window.grid_rowconfigure(0, weight=1)
-        self._window.grid_rowconfigure(1, weight=10)
-        self._window.grid_rowconfigure(2, weight=1)
-        self._window.grid_rowconfigure(3, weight=1)
-        self._window.grid_rowconfigure(4, weight=1)
+        self._window.grid_rowconfigure(0, weight=1, minsize=40)
+        self._window.grid_rowconfigure(1, weight=6, minsize=440)
+        self._window.grid_rowconfigure(2, weight=1, minsize=40)
+        self._window.grid_rowconfigure(3, weight=1, minsize=40)
+        self._window.grid_rowconfigure(4, weight=1, minsize=40)
 
     def create_window(self, master, deiconify_when_closed=True):
         self._master = master
@@ -59,29 +59,28 @@ class TranslatorWindow:
         self._window.deiconify()
     def __output_scrolled_on_modify(self, event):
         if event.keysym in ["Return", "Tab"]:
-            self._output_scrolled.event_generate("<BackSpace>")
-            if event.keysym == "Tab":
-                self._hint_entry.focus_set()    
+            last_symbol = self._output_scrolled.get("end-2c", "end-1c")
+            if last_symbol in [" ", "\t", "\n"]:
+                self._output_scrolled.event_generate("<BackSpace>")
+            self._hint_text.focus_set()    
     def __input_scrolled_on_modify(self, event):
-        print("hello")
-        typed = ""
         if event.keysym in ["Return", "Tab"]:
-            self._input_scrolled.event_generate("<BackSpace>")
+            last_symbol = self._input_scrolled.get("end-2c", "end-1c")
+            if last_symbol in [" ", "\t", "\n"]:
+                self._input_scrolled.event_generate("<BackSpace>")
         typed = self._input_scrolled.get("1.0", "end-1c")
         if event.keysym in ["Return", "Tab"]:
-            print(typed)
             output = self._output_scrolled.get("1.0", "end-1c")
             if typed == self._last_text_to_translate and output == self._last_translated_text:
                 if event.keysym != "Tab":
                     self.__do_save() 
             elif typed != "":
-                print("|" + typed + "|")
                 self.translate(typed)
             else:
                 if event.keysym != "Tab":
                     self.__show_empty_input_error()
-                self._hint_entry.delete(0, "end")
-                self._hint_entry.event_generate("<FocusOut>")
+                self._hint_text.delete("1.0", "end")
+                self._hint_text.event_generate("<FocusOut>")
                 self._output_scrolled.delete("1.0", "end")
                 self._output_scrolled.event_generate("<FocusOut>")
             if event.keysym == "Tab":
@@ -95,18 +94,17 @@ class TranslatorWindow:
             self._save_button.configure(state="normal")
         else:
             self._save_button.configure(state="disabled")
-            
-            #print("unbinding <Return> and binding <Return> to save")
-    # def __hint_entry_on_modify(self, event):
-    #     print(event.keysym)
-    #     self._input_scrolled.grab_set()
-    #     self._input_scrolled.focus_set()
-    #     if event.keysym == "Tab":
-    #         print("here2")
-    #         #self._input_scrolled.focus_force()
-    #         #self._input_scrolled. 
-    #     else:
-    #         pass
+
+    def __hint_entry_on_modify(self, event):
+        if event.keysym in ["Return", "Tab"]:
+            last_symbol = self._hint_text.get("end-2c", "end-1c")
+            if last_symbol in [" ", "\t", "\n"]:
+                self._hint_text.event_generate("<BackSpace>")
+            if event.keysym == "Tab":
+                self._input_scrolled.focus_set()
+            else:
+                self.__do_save()    
+        
     def __add_binds_to_text_widgets(self):
         self.text1 = "Enter text you want to translate here..."
         self._input_scrolled.insert("1.0", self.text1)
@@ -124,11 +122,11 @@ class TranslatorWindow:
         self._output_scrolled.bind("<Control-KeyPress>", ru_keys_handler)
         self._output_scrolled.bind("<KeyRelease>", self.__output_scrolled_on_modify )
         
-        self._hint_entry.insert(0, "Enter hint:")
-        self._hint_entry.bind("<FocusIn>", lambda event: self._hint_entry.delete(0, tk.END) if self._hint_entry.get() == "Enter hint:" else None)
-        self._hint_entry.bind("<FocusOut>", lambda event: self._hint_entry.insert(0, "Enter hint:") if self._hint_entry.get() == "" else None)
-        self._hint_entry.bind("<Control-KeyPress>", ru_keys_handler)
-        #self._hint_entry.bind("<Key>", self.__hint_entry_on_modify)
+        self._hint_text.insert("1.0", "Enter hint:")
+        self._hint_text.bind("<FocusIn>", lambda event: self._hint_text.delete("1.0", tk.END) if self._hint_text.get("1.0", "end-1c") == "Enter hint:" else None)
+        self._hint_text.bind("<FocusOut>", lambda event: self._hint_text.insert("1.0", "Enter hint:") if self._hint_text.get("1.0", "end-1c") == "" else None)
+        self._hint_text.bind("<Control-KeyPress>", ru_keys_handler)
+        self._hint_text.bind("<KeyRelease>", self.__hint_entry_on_modify)
         
     def __create_text_widgets(self):
         self._input_scrolled = scrolledtext.ScrolledText(self._window, bg=colors["darkgrey"], fg=colors["white"], wrap="word", state='normal', undo=True)
@@ -139,9 +137,9 @@ class TranslatorWindow:
         self._output_scrolled.grid(row=1, column=1, sticky="nsew")
         self._output_scrolled.configure(font=("Calibri", 14, "italic"))
 
-        self._hint_entry = tk.Entry(self._window, bg=colors["darkgrey"], fg=colors["white"])
-        self._hint_entry.grid(row=3, column=0, sticky="nsew", columnspan=2, ipady=1)
-        self._hint_entry.configure(font=("Calibri", 14))
+        self._hint_text = tk.Text(self._window, bg=colors["darkgrey"], fg=colors["white"])
+        self._hint_text.grid(row=3, column=0, sticky="nsew", columnspan=2, ipady=1)
+        self._hint_text.configure(font=("Calibri", 14))
         
     def __create_lang_widgets(self):
         self.langs = self._core.get_available_langs()
@@ -257,7 +255,7 @@ class TranslatorWindow:
     def __do_save(self):
         text_out = self._output_scrolled.get("1.0", "end-1c")
         self._window.focus_set()
-        answer = tk.messagebox.askokcancel("PyEng: Add word", f"Pair {self._last_text_to_translate}({self._last_lang_from_code}) - {text_out}({self._last_lang_to_code}) with hint: '{self._hint_entry.get()}' will be added to dictionary. Are you sure?")
+        answer = tk.messagebox.askokcancel("PyEng: Add word", f"Pair {self._last_text_to_translate}({self._last_lang_from_code}) - {text_out}({self._last_lang_to_code}) with hint: '{self._hint_text.get('1.0', 'end-1c')}' will be added to dictionary. Are you sure?")
         if answer:
             self._core.save_translation(self._last_lang_from_code, self._last_lang_to_code, self._last_text_to_translate, text_out)
     def add_text_to_translate(self, word):
