@@ -140,7 +140,8 @@ class PyengCore:
         if not os.path.exists(self.settings["dict_file_name"]):
             showerror("PyEng", self.__no_dict_file_error_msg())
             self.settings["dict_file_name"] = tk.filedialog.askopenfilename(
-                title="Select dictionary excel file", filetypes=[("EXCEL", "*.xlsx")])
+                title="Select dictionary excel file", filetypes=[("EXCEL", "*.xlsx")]).encode('utf-8').decode('utf-8')
+        print(self.settings["dict_file_name"])
         self.wb = openpyxl.load_workbook(self.settings["dict_file_name"])
         if "History" not in self.wb.sheetnames:
             self.__init_sheets("History")
