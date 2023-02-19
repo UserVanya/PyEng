@@ -14,10 +14,11 @@ class MainApp(tk.Tk):
         self._core = PyengCore()
         self._enter_cwd()
         self._tr_app = TranslatorWindow(self._core)
-        self.bind_all("<Escape>", lambda event: self._tr_app.close_window(False))
         self.option_add("*Font", ("Calibri", 20, "bold"))
         self._configure_main_window()
         self.thread = 0
+    def set_default_focus(self):
+        self._tranlator_button.focus_set()
     def _translator_callback(self, event=None):
         if not self._tr_app.is_opened():
             self._tr_app.create_window(self)
@@ -34,6 +35,16 @@ class MainApp(tk.Tk):
         self.grid_rowconfigure(1, weight=1)
         self.grid_rowconfigure(2, weight=1)
         self.grid_rowconfigure(3, weight=1)
+    def keys_handler(self, event):
+        if event.keysym == 'Escape':
+            self.iconify()
+        elif event.keysym == 'Return':
+            self.focus_get().invoke()
+        elif event.keysym == 'Up':
+            self.event_generate("<Shift-Tab>")
+        elif event.keysym == 'Down':
+            self.event_generate("<Tab>")
+
     def _configure_main_window(self):
         self.title("PyEng")
         width = 800
@@ -45,6 +56,8 @@ class MainApp(tk.Tk):
         self.configure(bg=colors["darkgrey"])
         self._configure_grid()
         self._create_widgets()
+        self.bind("<KeyRelease>", self.keys_handler)
+        self.set_default_focus()
     def _create_translator_window(self):
         self._tr_app.create_window(self)
         #hide main window
@@ -57,12 +70,12 @@ class MainApp(tk.Tk):
         pass    
     def _create_translate_from_file_window(self):
         pass
-    def _handle_checkbutton_focus_article(self):
-        if self._focus_article_enabled.get():
-            self._hotkey_focus_article = keyboard.add_hotkey('ctrl+q', self._translator_callback)
+    def _handle_checkbutton_inline_translations(self):
+        if self._inline_translations_enabled.get():
+            self._hotkey_inline_translations = keyboard.add_hotkey('ctrl+q', self._translator_callback)
             keyboard.add_hotkey('escape', lambda: self._tr_app.close_window(False))
         else:
-            keyboard.remove_hotkey(self._hotkey_focus_article)
+            keyboard.remove_hotkey(self._hotkey_inline_translations)
     def _create_widgets(self):
         self._tranlator_button = tk.Button(self, text="Translator", command=self._create_translator_window, bg=colors["black"], fg=colors["white"])
         self._tranlator_button.grid(row=0, column=0, sticky="nsew", padx=5, pady=5, columnspan=2)
@@ -76,10 +89,10 @@ class MainApp(tk.Tk):
         self._translate_from_file_button = tk.Button(self, text="Translate from file", command=self._create_translate_from_file_window, bg=colors["black"], fg=colors["white"])
         self._translate_from_file_button.grid(row=3, column=0, sticky="nsew", padx=5, pady=5, columnspan=2)
         
-        self._focus_article_enabled = tk.BooleanVar()
-        self._focus_article_checkbox = ttk.Checkbutton(self, text="Inline translations (Press <Ctrl-C> on text you want to translate and then <Ctrl-Q> to open translator window)", variable=self._focus_article_enabled, onvalue=True, offvalue=False)
-        self._focus_article_checkbox.grid(row=4, column=1, sticky="e", padx=5, pady=5)
-        self._focus_article_enabled.trace("w", lambda name, index, mode, sv=self._focus_article_enabled: self._handle_checkbutton_focus_article())
+        self._inline_translations_enabled = tk.BooleanVar()
+        self._inline_translations_checkbox = ttk.Checkbutton(self, text="Inline translations (Press <Ctrl-C> on text you want to translate and then <Ctrl-Q> to open translator window)", variable=self._inline_translations_enabled, onvalue=True, offvalue=False)
+        self._inline_translations_checkbox.grid(row=4, column=1, sticky="e", padx=5, pady=5)
+        self._inline_translations_enabled.trace("w", lambda name, index, mode, sv=self._inline_translations_enabled: self._handle_checkbutton_inline_translations())
 def main():
     app = MainApp()
     app.mainloop()
