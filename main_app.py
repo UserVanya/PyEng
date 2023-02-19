@@ -6,7 +6,6 @@ from pyeng_translator_win import TranslatorWindow
 from pyeng_core import PyengCore
 import keyboard
 import pyperclip
-import time
 colors = {"darkgrey": "#393D47", "lightgrey": "#E5E5E5",
           "white": "#FFFFFF", "black": "#000000", "grey": "#C0C0C0"}
 class MainApp(tk.Tk):
@@ -18,16 +17,15 @@ class MainApp(tk.Tk):
         self.bind_all("<Escape>", lambda event: self._tr_app.close_window(False))
         self.option_add("*Font", ("Calibri", 20, "bold"))
         self._configure_main_window()
+        self.thread = 0
     def _translator_callback(self, event=None):
         if not self._tr_app.is_opened():
             self._tr_app.create_window(self)
         self._tr_app.set_focus()
         text = pyperclip.paste().replace("\n", " ").replace(chr(2), "")
         self._tr_app.add_text_to_translate(text)
-        try:
-            self._tr_app.do_translate()
-        except:
-            pass    
+        self._tr_app.translate()
+        #self.do_translate()
         #time.sleep(0.5)
     def _configure_grid(self):
         self.grid_columnconfigure(0, weight=1)
@@ -62,7 +60,7 @@ class MainApp(tk.Tk):
     def _handle_checkbutton_focus_article(self):
         if self._focus_article_enabled.get():
             self._hotkey_focus_article = keyboard.add_hotkey('ctrl+q', self._translator_callback)
-            keyboard.add_hotkey('escape', lambda: self._tr_app.close_window(False), suppress=True)
+            keyboard.add_hotkey('escape', lambda: self._tr_app.close_window(False))
         else:
             keyboard.remove_hotkey(self._hotkey_focus_article)
     def _create_widgets(self):
@@ -82,6 +80,8 @@ class MainApp(tk.Tk):
         self._focus_article_checkbox = ttk.Checkbutton(self, text="Inline translations (Press <Ctrl-C> on text you want to translate and then <Ctrl-Q> to open translator window)", variable=self._focus_article_enabled, onvalue=True, offvalue=False)
         self._focus_article_checkbox.grid(row=4, column=1, sticky="e", padx=5, pady=5)
         self._focus_article_enabled.trace("w", lambda name, index, mode, sv=self._focus_article_enabled: self._handle_checkbutton_focus_article())
-if __name__ == "__main__":
+def main():
     app = MainApp()
     app.mainloop()
+if __name__ == "__main__":
+    main()

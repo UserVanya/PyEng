@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import scrolledtext
 from pyeng_core import *
+import threading
 from autocomplete_combobox import AutocompleteCombobox
 colors = {"darkgrey": "#393D47", "lightgrey": "#E5E5E5",
           "white": "#FFFFFF", "black": "#000000", "grey": "#C0C0C0"}
@@ -15,6 +16,7 @@ class TranslatorWindow:
         self._core = core
         self._is_window_opened = False
         self.__init_defaults()
+        self._thread = 0
     def __init_defaults(self):
         '''
         Initialize default values for variables last_lang_to_code, last_lang_from_code, last_text_to_translate, last_hint
@@ -46,7 +48,7 @@ class TranslatorWindow:
         self._window.geometry(f"{width}x{height}+{center_x}+{center_y}")
         self._window.resizable(False, False)
         self._window.configure(bg=colors["darkgrey"])
-        self._window.bind('<Return>', lambda event: self.do_translate())
+        self._window.bind('<Return>', lambda event: self.translate())
         self._window.protocol("WM_DELETE_WINDOW", self.close_window)
         #self._window.bind("<Escape>", lambda event: self.close_window())
         self.__configure_grid()
@@ -119,7 +121,7 @@ class TranslatorWindow:
             self._core.save_translation(self._last_lang_from_code, self._last_lang_to_code, self._last_text_to_translate, text_out)
             self._window.focus_set()
     def __create_buttons(self):
-        self.translate_button = tk.Button(self._window, text="Translate", command=self.do_translate, bg=colors["grey"], fg=colors["white"])
+        self.translate_button = tk.Button(self._window, text="Translate", command=self.translate, bg=colors["grey"], fg=colors["white"])
         self.translate_button.configure(font=("Calibri", 16))
         self.translate_button.grid(row=4, column=0, sticky="nsew")
 
@@ -167,7 +169,12 @@ class TranslatorWindow:
                 lang_to_code = 'ru'
                 self._output_lang.set(lang_to)
         return lang_from_code, lang_to_code
-    def do_translate(self):
+    def translate(self):
+        if self._thread != 0:
+            self._thread.join()
+        self._thread = threading.Thread(target=self._do_translate)
+        self._thread.start()
+    def _do_translate(self):
         text = self._check_and_get_corrected_input()
         lang_from_code, lang_to_code = self._check_and_get_corrected_langs(text)
         translation = self._core.get_translation(lang_from_code, lang_to_code, text)
@@ -177,7 +184,6 @@ class TranslatorWindow:
         self._last_lang_to_code = lang_to_code
         self._last_lang_from_code = lang_from_code
         self._last_text_to_translate = text
-        #self._last_hint = self._hint_entry.get()
         self.save_button.configure(state="normal")
     def add_text_to_translate(self, word):
         self._input_scrolled.delete("1.0", "end")
