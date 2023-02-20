@@ -6,6 +6,7 @@ import json
 import pandas as pd
 import ctypes
 import sys
+from deep_translator import GoogleTranslator
 from pyeng_yacl_translator_impl import YacloudTranslator
 def is_ru_lang_keyboard():
     '''
@@ -49,11 +50,13 @@ class PyengCore:
         Initializes two fields: lang_to_code and code_to_lang which are dictionaries to convert language name to language code and vice versa
         It is required to set field tr_impl before calling this method
         '''
-        langs_list = self.tr_impl.get_available_langs()
+        yacl_langs_list = self.tr_impl.get_available_langs()
+        
+        google_langs_dict = GoogleTranslator().get_supported_languages(as_dict=True)
         self.lang_to_code = {}
         self.code_to_lang = {}
-        for el in langs_list:
-            if 'name' in el.keys():
+        for el in yacl_langs_list:
+            if 'name' in el.keys() and el['code'].lower() in google_langs_dict.values():
                 self.lang_to_code[el['name'].lower()] = el['code'].lower()
                 self.code_to_lang[el['code'].lower()] = el['name'].lower()
     def get_lang_code(self, lang):
@@ -66,11 +69,12 @@ class PyengCore:
         Returns the language name of the language code
         '''
         return self.code_to_lang[code]
-    def get_available_langs(self):
+    def get_available_langs(self, service="yandex"):
         '''
         Returns the list of available languages
         '''
         return list(self.lang_to_code.keys())
+        #return list(self.lang_to_code.keys())
     def get_detected_lang (self, word):
         '''
         Returns the language name of the word
@@ -86,14 +90,17 @@ class PyengCore:
         if from_to_name not in self.dfs.keys() or word not in self.dfs[from_to_name]['Word']:
             translations = [self.tr_impl.get_translation(word, hint_lang_codes=[lang_from], target_lang_code=lang_to)['text']]
         else:
-            translations = list(self.dfs[from_to_name][self.dfs[from_to_name]['Word'] == word]['Translation'])
+            translations = list(self.dfs[from_to_name][self.dfs[from_to_name]['Word'] == word]['Translation'].values)
         self.__add_history(word, ', '.join(translations))
         return translations
-    def get_translation (self, lang_from, lang_to, word):
+    def get_translation (self, lang_from_code, lang_to_code, word, service="yandex"):
         '''
         Returns the tranlation of the requested word and saves the request to the history if the word is short enough
         '''
-        translation = self.tr_impl.get_translation(word, hint_lang_codes=[lang_from], target_lang_code=lang_to)['text']
+        if service == "yandex":
+            translation = self.tr_impl.get_translation(word, hint_lang_codes=[lang_from_code], target_lang_code=lang_to_code)['text']
+        else:
+            translation = GoogleTranslator(source=lang_from_code, target=lang_to_code).translate(word)
         if len(translation) < self.save_to_histoty_limit or len(word) < self.save_to_histoty_limit:
             self.__add_history(word, translation)
         return translation

@@ -163,25 +163,31 @@ class TranslatorWindow:
         '''
         Initializes language widgets and also adds bindings to them
         '''
-        self.langs = self._core.get_available_langs()
+        self._langs = self._core.get_available_langs()
 
         self._input_lang = AutocompleteCombobox(self._window)
         self._input_lang.grid(row=2, column=0, sticky='nsew')
-        self._input_lang.set_completion_list(self.langs)
+        self._input_lang.set_completion_list(self._langs)
         self._input_lang.bind("<FocusIn>", lambda event: self._input_lang.delete(0, tk.END) if self._input_lang.get() == "<autodetect>" else None)
-        self._input_lang.bind("<FocusOut>", lambda event: self._input_lang.set("<autodetect>") if self._input_lang.get() not in self.langs else None)
+        self._input_lang.bind("<FocusOut>", lambda event: self._input_lang.set("<autodetect>") if self._input_lang.get() not in self._langs else None)
         self._input_lang.bind("<Control-KeyPress>", ru_keys_handler)
         self._input_lang.insert(0, "<autodetect>")
         self._input_lang.configure(font=("Calibri", 16, "italic"))
         
         self._output_lang = AutocompleteCombobox(self._window)
-        self._output_lang.set_completion_list(self.langs)
+        self._output_lang.set_completion_list(self._langs)
         self._output_lang.grid(row=2, column=1, sticky='nsew')
-        self._output_lang.bind("<FocusIn>", lambda event: self._output_lang.delete(0, tk.END) if self._output_lang.get() not in self.langs else None)
-        self._output_lang.bind("<FocusOut>", lambda event: self._output_lang.set("русский") if self._output_lang.get() not in self.langs else None)
+        self._output_lang.bind("<FocusIn>", lambda event: self._output_lang.delete(0, tk.END) if self._output_lang.get() not in self._langs else None)
+        self._output_lang.bind("<FocusOut>", lambda event: self._output_lang.set("русский") if self._output_lang.get() not in self._langs else None)
         self._output_lang.bind("<Control-KeyPress>", ru_keys_handler)
         self._output_lang.set("русский")
         self._output_lang.configure(font=("Calibri", 16, "italic"))
+    #def __service_selection_on_change(self, event):
+        #self._core.set_service(self.service_combobox.get())
+        #print(self.service_combobox.get())
+        #self._langs = self._core.get_available_langs(self.service_combobox.get())
+        #self._input_lang.set_completion_list(self._langs)
+        #self._output_lang.set_completion_list(self._langs)
 
     def __create_service_selection(self):
         '''
@@ -191,6 +197,7 @@ class TranslatorWindow:
         self.service_combobox.set("Yandex")
         self.service_combobox.grid(row=0, column=0, sticky='nsew', columnspan=2)
         self.service_combobox.configure(font=("Calibri", 16))
+        #self.service_combobox.bind("<<ComboboxSelected>>", self.__service_selection_on_change)
     
     def is_opened(self):
         return self._is_window_opened
@@ -292,7 +299,7 @@ class TranslatorWindow:
         '''
         try:
             lang_from_code, lang_to_code = self._check_and_get_corrected_langs(text)
-            translation = self._core.get_translation(lang_from_code, lang_to_code, text)
+            translation = self._core.get_translation(lang_from_code, lang_to_code, text, self.service_combobox.get().lower())
             self._output_scrolled.delete("1.0", "end")
             self._output_scrolled.insert(tk.END, translation)
             self._last_lang_to_code = lang_to_code
