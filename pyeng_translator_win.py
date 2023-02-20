@@ -39,6 +39,9 @@ class TranslatorWindow:
         self._window.grid_rowconfigure(4, weight=1, minsize=40)
 
     def create_window(self, master, deiconify_when_closed=True):
+        '''
+        Creates window of translator tool and deiconfies it on exit if deiconify_when_closed is True
+        '''
         self._master = master
         self.__init_defaults()
         self._window = tk.Toplevel(master)
@@ -58,12 +61,18 @@ class TranslatorWindow:
         self._input_scrolled.focus_set()
         self._window.deiconify()
     def __output_scrolled_on_modify(self, event):
+        '''
+        Callback function for output scrolled text widget modification
+        '''
         if event.keysym in ["Return", "Tab"]:
             last_symbol = self._output_scrolled.get("end-2c", "end-1c")
             if last_symbol in [" ", "\t", "\n"]:
                 self._output_scrolled.event_generate("<BackSpace>")
             self._hint_text.focus_set()    
     def __input_scrolled_on_modify(self, event):
+        '''
+        Callback function for input scrolled text widget modification
+        '''
         if event.keysym in ["Return", "Tab"]:
             last_symbol = self._input_scrolled.get("end-2c", "end-1c")
             if last_symbol in [" ", "\t", "\n"]:
@@ -95,7 +104,10 @@ class TranslatorWindow:
         else:
             self._save_button.configure(state="disabled")
 
-    def __hint_entry_on_modify(self, event):
+    def __hint_text_on_modify(self, event):
+        '''
+        Callback function for hint text modification
+        '''
         if event.keysym in ["Return", "Tab"]:
             last_symbol = self._hint_text.get("end-2c", "end-1c")
             if last_symbol in [" ", "\t", "\n"]:
@@ -106,6 +118,9 @@ class TranslatorWindow:
                 self.__do_save()    
         
     def __add_binds_to_text_widgets(self):
+        '''
+        Addes default parameters and bindings to text widgets
+        '''
         self.text1 = "Enter text you want to translate here..."
         self._input_scrolled.insert("1.0", self.text1)
         self._input_scrolled.bind("<FocusIn>", lambda event: self._input_scrolled.delete("1.0", "end") if self._input_scrolled.get("1.0", "end-1c") == self.text1 else None)
@@ -126,9 +141,12 @@ class TranslatorWindow:
         self._hint_text.bind("<FocusIn>", lambda event: self._hint_text.delete("1.0", tk.END) if self._hint_text.get("1.0", "end-1c") == "Enter hint:" else None)
         self._hint_text.bind("<FocusOut>", lambda event: self._hint_text.insert("1.0", "Enter hint:") if self._hint_text.get("1.0", "end-1c") == "" else None)
         self._hint_text.bind("<Control-KeyPress>", ru_keys_handler)
-        self._hint_text.bind("<KeyRelease>", self.__hint_entry_on_modify)
+        self._hint_text.bind("<KeyRelease>", self.__hint_text_on_modify)
         
     def __create_text_widgets(self):
+        '''
+        Initializes text widgets
+        '''
         self._input_scrolled = scrolledtext.ScrolledText(self._window, bg=colors["darkgrey"], fg=colors["white"], wrap="word", state='normal', undo=True)
         self._input_scrolled.grid(row=1, column=0, sticky="nsew")
         self._input_scrolled.configure(font=("Calibri", 14))
@@ -142,6 +160,9 @@ class TranslatorWindow:
         self._hint_text.configure(font=("Calibri", 14))
         
     def __create_lang_widgets(self):
+        '''
+        Initializes language widgets and also adds bindings to them
+        '''
         self.langs = self._core.get_available_langs()
 
         self._input_lang = AutocompleteCombobox(self._window)
@@ -163,6 +184,9 @@ class TranslatorWindow:
         self._output_lang.configure(font=("Calibri", 16, "italic"))
 
     def __create_service_selection(self):
+        '''
+        Initializes service selection combobox
+        '''
         self.service_combobox = ttk.Combobox(self._window, values=[ "Google", "Yandex"], state='readonly', justify='center', foreground=colors["black"])
         self.service_combobox.set("Yandex")
         self.service_combobox.grid(row=0, column=0, sticky='nsew', columnspan=2)
@@ -172,6 +196,9 @@ class TranslatorWindow:
         return self._is_window_opened
     
     def __create_buttons(self):
+        '''
+        Initializes save and translate buttons
+        '''
         self._translate_button = tk.Button(self._window, text="Translate", command=self.translate, bg=colors["grey"], fg=colors["white"])
         self._translate_button.configure(font=("Calibri", 16))
         self._translate_button.grid(row=4, column=0, sticky="nsew")
@@ -181,6 +208,9 @@ class TranslatorWindow:
         self._save_button.grid(row=4, column=1, sticky="nsew")
     
     def __create_widgets(self):
+        '''
+        Initializes all widgets and adds bindings to them
+        '''
         self.__create_service_selection()
 
         self.__create_text_widgets()
@@ -192,13 +222,20 @@ class TranslatorWindow:
         self.__add_binds_to_text_widgets()
     
     def __show_empty_input_error(self):
+        '''
+        Shows error message and sets focus on window
+        '''
         self._window.focus_set()
-        tk.messagebox.askokcancel("Error", "Please, enter text to translate")
+        return tk.messagebox.askokcancel("Error", "Please, enter text to translate")
     def _check_and_get_corrected_input(self):
+        '''
+        Checks if input is empty, if so, raises the ValueError exception.
+        Returns the corrected input text.
+        '''
         text = self._input_scrolled.get("1.0", "end-1c")
         if text is None or text == "":
             self.__show_empty_input_error()
-            return
+            raise ValueError("Input is empty")
         if text[-1] == '\n':
             text = text[:-1]
             self._input_scrolled.delete("end-1c", "end")
@@ -207,6 +244,12 @@ class TranslatorWindow:
         self._input_scrolled.insert("1.0", text)
         return text
     def _check_and_get_corrected_langs(self, text):
+        '''
+        Detects input language and sets if <autodetec> mode is on. 
+        Compares it with the language selected to translate. 
+        If the languages are the same, and the language is not English, then the output language is set to 'english'. 
+        If the languages are the same and the language is English, then the output language is set to 'русский'.
+        '''
         lang_from_code = 'en'
         detected_lang = self._core.get_detected_lang(text)
         lang_from = self._input_lang.get()
@@ -227,9 +270,15 @@ class TranslatorWindow:
                 self._output_lang.set(lang_to)
         return lang_from_code, lang_to_code
     def translate(self, text=""):
-        print("Translation called")
+        '''
+        The wrapper on do translate asynchronous function
+        '''
+        #print("Translation called")
         if text == "":
-            text = self._check_and_get_corrected_input()
+            try:
+                text = self._check_and_get_corrected_input()
+            except ValueError:
+                self.__show_empty_input_error()
         if self._thread != 0:
             if not self._thread.is_alive():
                 self._thread.join()
@@ -238,6 +287,9 @@ class TranslatorWindow:
         self._thread = threading.Thread(target=lambda:self._do_translate(text))
         self._thread.start()
     def _do_translate(self, text):
+        '''
+        Translates the text and shows the result in the output text widget
+        '''
         try:
             lang_from_code, lang_to_code = self._check_and_get_corrected_langs(text)
             translation = self._core.get_translation(lang_from_code, lang_to_code, text)
@@ -253,18 +305,30 @@ class TranslatorWindow:
             return
         
     def __do_save(self):
+        '''
+        Saves the translation to the dictionary and shows the message box, so the focus will be on the main window
+        '''
         text_out = self._output_scrolled.get("1.0", "end-1c")
         self._window.focus_set()
         answer = tk.messagebox.askokcancel("PyEng: Add word", f"Pair {self._last_text_to_translate}({self._last_lang_from_code}) - {text_out}({self._last_lang_to_code}) with hint: '{self._hint_text.get('1.0', 'end-1c')}' will be added to dictionary. Are you sure?")
         if answer:
             self._core.save_translation(self._last_lang_from_code, self._last_lang_to_code, self._last_text_to_translate, text_out)
     def add_text_to_translate(self, word):
+        '''
+        The function to call outside of the class to add text to the input text widget
+        '''
         self._input_scrolled.delete("1.0", "end")
         self._input_scrolled.insert(tk.END, word)
     def set_focus(self):
+        '''
+        Sets focus on the window
+        '''
         self._window.focus_set()
         self._window.focus_force()
     def close_window(self, do_master_deiconify=True):
+        '''
+        Closes the window and releases the focus on the master window if do_master_deiconify is True
+        '''
         if self._window and self._is_window_opened:
             self._window.grab_release()
             self._window.destroy()
