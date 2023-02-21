@@ -6,6 +6,7 @@ from tkinter import ttk
 from tkinter import scrolledtext
 from pyeng_core import *
 import threading
+import time
 from autocomplete_combobox import AutocompleteCombobox
 colors = {"darkgrey": "#393D47", "lightgrey": "#E5E5E5",
           "white": "#FFFFFF", "black": "#000000", "grey": "#C0C0C0"}
@@ -142,7 +143,12 @@ class TranslatorWindow:
         self._hint_text.bind("<FocusOut>", lambda event: self._hint_text.insert("1.0", "Enter hint:") if self._hint_text.get("1.0", "end-1c") == "" else None)
         self._hint_text.bind("<Control-KeyPress>", ru_keys_handler)
         self._hint_text.bind("<KeyRelease>", self.__hint_text_on_modify)
-        
+    def __output_listbox_on_select(self, event):
+        '''
+        Callback function for output listbox modification
+        '''
+        self._output_scrolled.delete("1.0", "end")
+        self._output_scrolled.insert("1.0", self._output_listbox.selection_get())
     def __create_text_widgets(self):
         '''
         Initializes text widgets
@@ -152,15 +158,16 @@ class TranslatorWindow:
         self._input_scrolled.configure(font=("Calibri", 14))
 
         self._output_frame = ttk.Frame(self._window, style="TFrame")
-        self._output_frame.grid(row=1, column=1, sticky="nsew")
+        self._output_frame.grid(row=1, column=1) #sticky="nsew")
         self._output_frame.grid_rowconfigure(0, weight=1, minsize=210)
         self._output_frame.grid_rowconfigure(1, weight=1, minsize=210)
         self._output_frame.grid_columnconfigure(0, weight=1, minsize=210)
         self._output_scrolled = scrolledtext.ScrolledText(self._output_frame, bg=colors["darkgrey"], fg=colors["lightgrey"], wrap="word", state="normal")
-        self._output_scrolled.grid(row=0, column=0, sticky="nsew")
+        self._output_scrolled.grid(row=0, column=0, sticky="nsew", rowspan=2)
         self._output_listbox = tk.Listbox(self._output_frame, bg=colors["darkgrey"], fg=colors["lightgrey"], selectmode="single") 
-        self._output_listbox.grid(row=1, column=0, sticky="nsew")
+        #self._output_listbox.grid(row=1, column=0, sticky="nsew")
         #row=1, column=1, sticky="nsew")
+        self._output_listbox.bind("<<ListboxSelect>>", self.__output_listbox_on_select)
         self._output_scrolled.configure(font=("Calibri", 14, "italic"))
 
         self._hint_text = tk.Text(self._window, bg=colors["darkgrey"], fg=colors["white"])
@@ -197,16 +204,30 @@ class TranslatorWindow:
         #self._input_lang.set_completion_list(self._langs)
         #self._output_lang.set_completion_list(self._langs)
 
+    def __synonims_enabled_on_change(self, s, i, m):
+        #iconify output listbox
+        if self._synonims_enabled.get():
+            self._output_listbox.grid(row=1, column=0, sticky="nsew")
+            self._output_scrolled.grid(row=0, column=0, sticky="nsew")
+        else:
+            self._output_listbox.grid_forget()
+            self._output_scrolled.grid(row=0, column=0, sticky="nsew", rowspan=2)
     def __create_service_selection(self):
         '''
         Initializes service selection combobox
         '''
         self.service_combobox = ttk.Combobox(self._window, values=[ "Google", "Yandex"], state='readonly', justify='center', foreground=colors["black"])
         self.service_combobox.set("Yandex")
-        self.service_combobox.grid(row=0, column=0, sticky='nsew', columnspan=2)
+        self.service_combobox.grid(row=0, column=0, sticky='nsew')
         self.service_combobox.configure(font=("Calibri", 16))
         #self.service_combobox.bind("<<ComboboxSelected>>", self.__service_selection_on_change)
-    
+
+        self._synonims_enabled = tk.BooleanVar()
+        self._synonims_checkbutton = ttk.Checkbutton(self._window, text='Enable synonims', variable=self._synonims_enabled, onvalue=True, offvalue=False)
+        self._synonims_checkbutton.grid(row=0, column=1, sticky='nsew')
+        #self._synonims_checkbutton.configure(font=("Calibri", 16))
+        self._synonims_enabled.set(False)
+        self._synonims_enabled.trace("w", self.__synonims_enabled_on_change)
     def is_opened(self):
         return self._is_window_opened
     
@@ -305,12 +326,14 @@ class TranslatorWindow:
         '''
         Translates the text and shows the result in the output text widget
         '''
+        time_start = time.time()
         try:
             lang_from_code, lang_to_code = self._check_and_get_corrected_langs(text)
             translation = self._core.get_translation(lang_from_code, lang_to_code, text, self.service_combobox.get().lower())
-            other_translations = self._core.get_translations(lang_from_code, lang_to_code, text)
-            self._output_listbox.delete(0, tk.END)
-            self._output_listbox.insert(tk.END, *other_translations)
+            if self._synonims_enabled.get():
+                other_translations = self._core.get_translations(lang_from_code, lang_to_code, text)
+                self._output_listbox.delete(0, tk.END)
+                self._output_listbox.insert(tk.END, *other_translations)
             self._output_scrolled.delete("1.0", "end")
             self._output_scrolled.insert(tk.END, translation)
             self._last_lang_to_code = lang_to_code
@@ -318,6 +341,7 @@ class TranslatorWindow:
             self._last_text_to_translate = text
             self._last_translated_text = translation
             self._save_button.configure(state="normal")
+            print(f"Translation time: {time.time() - time_start} seconds")
         except:
             tk.messagebox.askokcancel("Error", "Error occured while translating: " + str(sys.exc_info()[0]))
             return

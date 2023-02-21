@@ -97,9 +97,9 @@ class PyengCore:
         from_to_name = f"{lang_from}_to_{lang_to}"
         translations_ya_cl = [self.tr_impl.get_translation(word, hint_lang_codes=[lang_from], target_lang_code=lang_to)['text']]
         translations_dfs = list(self.dfs[from_to_name][self.dfs[from_to_name]['Word'] == word]['Translation'].values)
-        #translation_goole = [GoogleTranslator(source=lang_from, target=lang_to).translate(word)]
+        translation_google = [GoogleTranslator(source=lang_from, target=lang_to).translate(word)]
         translations_pons = PonsTranslator(source=lang_from, target=lang_to).translate(word, return_all=True)
-        translations = translations_ya_cl + translations_dfs + translations_pons
+        translations = translations_ya_cl + translations_dfs + translations_pons + translation_google
         return self.__fixed_translations_list(translations)
     def get_translation (self, lang_from_code, lang_to_code, word, service="yandex"):
         '''
