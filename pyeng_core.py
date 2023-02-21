@@ -8,6 +8,7 @@ import ctypes
 import sys
 from deep_translator import GoogleTranslator
 from pyeng_yacl_translator_impl import YacloudTranslator
+from deep_translator import PonsTranslator
 def is_ru_lang_keyboard():
     '''
     Auxiliary function to check if the current keyboard layout is Russian.
@@ -80,19 +81,26 @@ class PyengCore:
         Returns the language name of the word
         '''
         return self.code_to_lang[self.tr_impl.get_language_code(word)] 
+    def __fixed_translations_list(self, translations: list):
+        '''
+        Auxiliary function to fix the list of translations for the word
+        '''
+        for i in range(len(translations)):
+            translations[i] = translations[i].lower().strip().replace(chr(833), "")
+        translations = list(set(translations))
+        return translations 
     def get_translations (self, lang_from: str, lang_to: str, word: str) -> list:
         '''
         Returns saved translations for requested !!!word!!! or requests yandex cloud for translation if there are no available translations for this word
         and saves the history of request
         '''
         from_to_name = f"{lang_from}_to_{lang_to}"
-        translations = []
-        if from_to_name not in self.dfs.keys() or word not in self.dfs[from_to_name]['Word']:
-            translations = [self.tr_impl.get_translation(word, hint_lang_codes=[lang_from], target_lang_code=lang_to)['text']]
-        else:
-            translations = list(self.dfs[from_to_name][self.dfs[from_to_name]['Word'] == word]['Translation'].values)
-        self.__add_history(word, ', '.join(translations))
-        return translations
+        translations_ya_cl = [self.tr_impl.get_translation(word, hint_lang_codes=[lang_from], target_lang_code=lang_to)['text']]
+        translations_dfs = list(self.dfs[from_to_name][self.dfs[from_to_name]['Word'] == word]['Translation'].values)
+        #translation_goole = [GoogleTranslator(source=lang_from, target=lang_to).translate(word)]
+        translations_pons = PonsTranslator(source=lang_from, target=lang_to).translate(word, return_all=True)
+        translations = translations_ya_cl + translations_dfs + translations_pons
+        return self.__fixed_translations_list(translations)
     def get_translation (self, lang_from_code, lang_to_code, word, service="yandex"):
         '''
         Returns the tranlation of the requested word and saves the request to the history if the word is short enough

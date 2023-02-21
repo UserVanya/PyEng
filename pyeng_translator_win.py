@@ -151,8 +151,16 @@ class TranslatorWindow:
         self._input_scrolled.grid(row=1, column=0, sticky="nsew")
         self._input_scrolled.configure(font=("Calibri", 14))
 
-        self._output_scrolled = scrolledtext.ScrolledText(self._window, bg=colors["darkgrey"], fg=colors["lightgrey"], wrap="word", state="normal")
-        self._output_scrolled.grid(row=1, column=1, sticky="nsew")
+        self._output_frame = ttk.Frame(self._window, style="TFrame")
+        self._output_frame.grid(row=1, column=1, sticky="nsew")
+        self._output_frame.grid_rowconfigure(0, weight=1, minsize=210)
+        self._output_frame.grid_rowconfigure(1, weight=1, minsize=210)
+        self._output_frame.grid_columnconfigure(0, weight=1, minsize=210)
+        self._output_scrolled = scrolledtext.ScrolledText(self._output_frame, bg=colors["darkgrey"], fg=colors["lightgrey"], wrap="word", state="normal")
+        self._output_scrolled.grid(row=0, column=0, sticky="nsew")
+        self._output_listbox = tk.Listbox(self._output_frame, bg=colors["darkgrey"], fg=colors["lightgrey"], selectmode="single") 
+        self._output_listbox.grid(row=1, column=0, sticky="nsew")
+        #row=1, column=1, sticky="nsew")
         self._output_scrolled.configure(font=("Calibri", 14, "italic"))
 
         self._hint_text = tk.Text(self._window, bg=colors["darkgrey"], fg=colors["white"])
@@ -300,6 +308,9 @@ class TranslatorWindow:
         try:
             lang_from_code, lang_to_code = self._check_and_get_corrected_langs(text)
             translation = self._core.get_translation(lang_from_code, lang_to_code, text, self.service_combobox.get().lower())
+            other_translations = self._core.get_translations(lang_from_code, lang_to_code, text)
+            self._output_listbox.delete(0, tk.END)
+            self._output_listbox.insert(tk.END, *other_translations)
             self._output_scrolled.delete("1.0", "end")
             self._output_scrolled.insert(tk.END, translation)
             self._last_lang_to_code = lang_to_code
