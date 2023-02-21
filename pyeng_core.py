@@ -162,7 +162,7 @@ class PyengCore:
         if "History" not in self.wb.sheetnames:
             self.__init_sheets("History")
         for sheetname in self.wb.sheetnames:
-            self.dfs[sheetname] = pd.read_excel(self.settings['dict_file_name'], sheet_name=sheetname)
+            self.dfs[sheetname] = pd.read_excel(self.settings['dict_file_name'], sheet_name=sheetname, engine='openpyxl')
     def __add_history(self, word, translation):
         '''
         Adds the word and its translation to the history sheet
